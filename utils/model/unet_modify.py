@@ -22,10 +22,12 @@ class Unet(nn.Module):
         self.down2 = Down(128, 256)
         self.down3 = Down(256, 512)
         self.down4 = Down(512, 1024)
-        self.up1 = Up(1024, 512)
-        self.up2 = Up(512, 256)
-        self.up3 = Up(256, 128)
-        self.up4 = Up(128, 64)
+        self.down5 = Down(1024, 2048)
+        self.up1 = Up(2048, 1024)
+        self.up2 = Up(1024, 512)
+        self.up3 = Up(512, 256)
+        self.up4 = Up(256, 128)
+        self.up5 = Up(128, 64)
         self.last_block = nn.Conv2d(64, out_chans, kernel_size=1)
 
     def norm(self, x):
