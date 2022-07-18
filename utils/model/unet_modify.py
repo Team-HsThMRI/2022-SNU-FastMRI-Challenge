@@ -56,12 +56,14 @@ class Unet(nn.Module):
         d2 = self.down1(d1)
         d3 = self.down2(d2)
         d4 = self.down3(d3)
-        m0 = self.down4(d4)
-        u1 = self.up1(m0, d4)
-        u2 = self.up2(u1, d3)
-        u3 = self.up3(u2, d2)
-        u4 = self.up4(u3, d1)
-        output = self.last_block(u4)
+        d5 = self.down4(d4)
+        m0 = self.down5(d5)
+        u1 = self.up1(m0, d5)
+        u2 = self.up2(u1, d4)
+        u3 = self.up3(u2, d3)
+        u4 = self.up4(u3, d2)
+        u5 = self.up5(u4, d1)
+        output = self.last_block(u5)
 
         # output = self.last_block(c5)
         output = output.squeeze(1)
@@ -98,6 +100,7 @@ class ConvBlock(nn.Module):
             nn.Conv2d(out_chans, out_chans, kernel_size=3, padding=1),
             nn.BatchNorm2d(out_chans),
             nn.ReLU(inplace=True)
+
         )
 
     def forward(self, x):
