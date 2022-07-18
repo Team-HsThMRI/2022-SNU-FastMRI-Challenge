@@ -4,7 +4,7 @@ import torch
 from collections import defaultdict
 from utils.common.utils import save_reconstructions
 from utils.data.load_data import create_data_loaders
-from utils.model.unet import Unet
+from utils.model.unet_dropout import Unet
 
 def test(args, model, data_loader):
     model.eval()

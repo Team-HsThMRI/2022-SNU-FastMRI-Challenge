@@ -8,7 +8,7 @@ from collections import defaultdict
 from utils.data.load_data import create_data_loaders
 from utils.common.utils import save_reconstructions, ssim_loss
 from utils.common.loss_function import SSIMLoss
-from utils.model.unet_modify import Unet
+from utils.model.unet_dropout import Unet
 
 def train_epoch(args, epoch, model, data_loader, optimizer, loss_type):
     model.train()
