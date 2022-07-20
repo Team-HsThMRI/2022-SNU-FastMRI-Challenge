@@ -59,11 +59,12 @@ class Mnet(nn.Module):
 
         dwn1 = self.downshift1(lleg1)
         enc1 = self.down1(dwn1)
-        dwn2 = self.downshift(lleg2, enc1)
+        dwn2 = self.downshift2(lleg2, enc1)
         enc2 = self.down2(dwn2)
-        dwn3 = self.downshift(lleg3, enc2)
+        dwn3 = self.downshift3(lleg3, enc2)
         enc3 = self.down3(dwn3)
         u1 = self.middleshift(lleg4, enc3)
+
         rleg1 = u1
         dec1 = self.up1(u1)
         u2 = self.upshift1(dwn3, dec1)
@@ -184,7 +185,7 @@ class Up(nn.Module):
         self.up = nn.ConvTranspose2d(in_chans, out_chans, kernel_size=2, stride=2)
         self.dropout = nn.Dropout(p)
 
-    def forward(self, x, concat_input):
+    def forward(self, x):
         x = self.up(x)
         x = self.dropout(x)
         return x
