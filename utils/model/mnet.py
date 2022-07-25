@@ -10,29 +10,29 @@ class Mnet(nn.Module):
         self.in_chans = in_chans
         self.out_chans = out_chans
 
-        self.first_block = ConvBlock(in_chans, 32)
+        self.first_block = ConvBlock(in_chans, 128)
 
-        self.downshift1 = firstDownShift(32, 64, 0)
-        self.downshift2 = DownShift(64, 96, 0)
-        self.downshift3 = DownShift(96, 128, 0)
-        self.middleshift = MiddleShift(128, 128, 0)
-        self.upshift1 = UpShift(128, 96, 0)
-        self.upshift2 = UpShift(96, 64, 0)
-        self.upshift3 = UpShift(64, 32, 0)
+        self.downshift1 = firstDownShift(128, 256, 0)
+        self.downshift2 = DownShift(256, 384, 0)
+        self.downshift3 = DownShift(384, 512, 0)
+        self.middleshift = MiddleShift(512, 512, 0)
+        self.upshift1 = UpShift(512, 384, 0)
+        self.upshift2 = UpShift(384, 256, 0)
+        self.upshift3 = UpShift(256, 128, 0)
 
-        self.down = Down(32, 32, 0)
-        self.down1 = Down(64, 64, 0)
-        self.down2 = Down(96, 96, 0)
-        self.down3 = Down(128, 128, 0)
-        self.up1 = Up(128, 128, 0)
-        self.up2 = Up(96, 96, 0)
-        self.up3 = Up(64, 64, 0)
-        self.rup1 = Up(128, 128, 0)
-        self.rup2 = Up(224, 224, 0)
-        self.rup3 = Up(288, 288, 0)
+        self.down = Down(128, 128, 0)
+        self.down1 = Down(256, 256, 0)
+        self.down2 = Down(384, 384, 0.5)
+        self.down3 = Down(512, 512, 0.5)
+        self.up1 = Up(512, 512, 0)
+        self.up2 = Up(384, 384, 0)
+        self.up3 = Up(256, 256, 0)
+        self.rup1 = Up(512, 512, 0)
+        self.rup2 = Up(896, 896, 0)
+        self.rup3 = Up(1152, 1152, 0)
 
         self.last_block = nn.Sequential(
-            nn.Conv2d(320, out_chans, kernel_size=1),
+            nn.Conv2d(1280, out_chans, kernel_size=1),
             nn.ReLU(inplace = True),
             nn.BatchNorm2d(out_chans),
         )
@@ -104,8 +104,8 @@ class firstDownShift(nn.Module):
         super().__init__()
         self.in_chans = in_chans
         self.out_chans = out_chans
-        self.convblock1 = ConvBlock(in_chans, 32)
-        self.convblock2 = ConvBlock(64, out_chans)
+        self.convblock1 = ConvBlock(in_chans, 128)
+        self.convblock2 = ConvBlock(256, out_chans)
 
     def forward(self, x):
         originx = x
@@ -120,7 +120,7 @@ class DownShift(nn.Module):
         super().__init__()
         self.in_chans = in_chans
         self.out_chans = out_chans
-        self.convblock1 = ConvBlock(in_chans + 32, in_chans)
+        self.convblock1 = ConvBlock(in_chans + 128, in_chans)
         self.convblock2 = ConvBlock(in_chans * 2, out_chans)
 
     def forward(self, concat_input, x):
@@ -150,7 +150,7 @@ class MiddleShift(nn.Module):
         super().__init__()
         self.in_chans = in_chans
         self.out_chans = out_chans
-        self.convblock1 = ConvBlock(in_chans+32, in_chans)
+        self.convblock1 = ConvBlock(in_chans+128, in_chans)
         self.convblock2 = ConvBlock(in_chans*2, in_chans*2)
         self.convblock3 = ConvBlock(in_chans*2, out_chans)
 

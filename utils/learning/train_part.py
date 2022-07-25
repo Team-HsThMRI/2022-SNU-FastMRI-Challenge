@@ -10,6 +10,7 @@ from utils.common.utils import save_reconstructions, ssim_loss
 from utils.common.loss_function import SSIMLoss
 from utils.model.unet_modify import Unet
 
+
 def train_epoch(args, epoch, model, data_loader, optimizer, loss_type):
     model.train()
     start_epoch = start_iter = time.perf_counter()
@@ -92,13 +93,12 @@ def save_model(args, exp_dir, epoch, model, optimizer, best_val_loss, is_new_bes
         shutil.copyfile(exp_dir / 'model.pt', exp_dir / 'best_model.pt')
 
 
-        
 def train(args):
     device = torch.device(f'cuda:{args.GPU_NUM}' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(device)
     print('Current cuda device: ', torch.cuda.current_device())
-    
-    model = Unet(in_chans = args.in_chans, out_chans = args.out_chans)
+
+    model = Unet(in_chans=args.in_chans, out_chans=args.out_chans)
     model.to(device=device)
     loss_type = SSIMLoss().to(device=device)
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
@@ -106,13 +106,12 @@ def train(args):
     best_val_loss = 1.
     start_epoch = 0
 
-    
-    train_loader = create_data_loaders(data_path = args.data_path_train, args = args)
-    val_loader = create_data_loaders(data_path = args.data_path_val, args = args)
+    train_loader = create_data_loaders(data_path=args.data_path_train, args=args)
+    val_loader = create_data_loaders(data_path=args.data_path_val, args=args)
 
     for epoch in range(start_epoch, args.num_epochs):
         print(f'Epoch #{epoch:2d} ............... {args.net_name} ...............')
-        
+
         train_loss, train_time = train_epoch(args, epoch, model, train_loader, optimizer, loss_type)
         val_loss, num_subjects, reconstructions, targets, inputs, val_time = validate(args, model, val_loader)
 
