@@ -27,9 +27,9 @@ class Mnet(nn.Module):
         self.up1 = Up(512, 512, 0)
         self.up2 = Up(384, 384, 0)
         self.up3 = Up(256, 256, 0)
-        self.rup1 = Up(512, 512, 0)
-        self.rup2 = Up(896, 896, 0)
-        self.rup3 = Up(1152, 1152, 0)
+        self.rup1 = Up(512, 512, 0.5)
+        self.rup2 = Up(896, 896, 0.5)
+        self.rup3 = Up(1152, 1152, 0.5)
 
         self.last_block = nn.Sequential(
             nn.Conv2d(1280, out_chans, kernel_size=1),
