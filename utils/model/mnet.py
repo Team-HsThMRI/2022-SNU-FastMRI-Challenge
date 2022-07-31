@@ -2,7 +2,103 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-class deeperMnet(nn.Module):
+
+class deeperMnet2(nn.Module):
+    def __init__(self, in_chans, out_chans):
+        super().__init__()
+        self.in_chans = in_chans
+        self.out_chans = out_chans
+
+        self.first_block = ConvBlock(in_chans, 32)
+
+        self.downshift1 = firstDownShift(32, 64, 0)
+        self.downshift2 = DownShift(64, 96, 0)
+        self.downshift3 = DownShift(96, 128, 0)
+        self.downshift4 = DownShift(128, 160, 0)
+        self.downshift5 = DownShift(160, 192, 0)
+        self.middleshift = MiddleShift(192, 192, 0)
+        self.upshift_1 = UpShift(192, 160, 0)
+        self.upshift0 = UpShift(160, 128, 0)
+        self.upshift1 = UpShift(128, 96, 0)
+        self.upshift2 = UpShift(96, 64, 0)
+        self.upshift3 = UpShift(64, 32, 0)
+
+        self.down = Down(32, 32, 0)
+        self.down1 = Down(64, 64, 0)
+        self.down2 = Down(96, 96, 0)
+        self.down3 = Down(128, 128, 0)
+        self.down4 = Down(160, 160, 0)
+        self.down5 = Down(192, 192, 0)
+        self.up_1 = Up(192, 192, 0)
+        self.up0 = Up(160, 160, 0)
+        self.up1 = Up(128, 128, 0)
+        self.up2 = Up(96, 96, 0)
+        self.up3 = Up(64, 64, 0)
+        self.rup_1 = Up(192, 192, 0)
+        self.rup0 = Up(352, 352, 0)
+        self.rup1 = Up(480, 480, 0)
+        self.rup2 = Up(576, 576, 0)
+        self.rup3 = Up(640, 640, 0)
+
+        self.last_block = nn.Sequential(
+            nn.Conv2d(672, out_chans, kernel_size=1),
+            nn.ReLU(inplace = True),
+            nn.BatchNorm2d(out_chans),
+        )
+
+    def norm(self, x):
+        b, h, w = x.shape
+        x = x.view(b, h * w)
+        mean = x.mean(dim=1).view(b, 1, 1)
+        std = x.std(dim=1).view(b, 1, 1)
+        x = x.view(b, h, w)
+        return (x - mean) / std, mean, std
+
+    def unnorm(self, x, mean, std):
+        return x * std + mean
+
+    def forward(self, input):
+        input, mean, std = self.norm(input)
+        input = input.unsqueeze(1) # 순서대로 batch, channel, height, width
+
+        lleg1 = self.first_block(input)
+        lleg2 = self.down(lleg1)
+        lleg3 = self.down(lleg2)
+        lleg4 = self.down(lleg3)
+        lleg5 = self.down(lleg4)
+
+        dwn1 = self.downshift1(lleg1)
+        enc1 = self.down1(dwn1)
+        dwn2 = self.downshift2(lleg2, enc1)
+        enc2 = self.down2(dwn2)
+        dwn3 = self.downshift3(lleg3, enc2)
+        enc3 = self.down3(dwn3)
+        dwn4 = self.downshift4(lleg4, enc3)
+        enc4 = self.down4(dwn4)
+        u0 = self.middleshift(lleg5, enc4)
+
+        rleg0 = u0
+        dec0 = self.up0(u0)
+        u1 = self.upshift0(dwn4, dec0)
+        rleg1 = torch.cat([u1, self.rup0(rleg0)], dim=1)
+        dec1 = self.up1(u1)
+        u2 = self.upshift1(dwn3, dec1)
+        rleg2 = torch.cat([u2, self.rup1(rleg1)], dim=1)
+        dec2 = self.up2(u2)
+        u3 = self.upshift2(dwn2, dec2)
+        rleg3 = torch.cat([u3, self.rup2(rleg2)], dim=1)
+        dec3 = self.up3(u3)
+        u4 = self.upshift3(dwn1, dec3)
+        rleg4 = torch.cat([u4, self.rup3(rleg3)], dim=1)
+
+        output = self.last_block(rleg4)
+        output = output.squeeze(1)
+        output = self.unnorm(output, mean, std)
+
+        return output
+
+
+class deeperMnet1(nn.Module):
     def __init__(self, in_chans, out_chans):
         super().__init__()
         self.in_chans = in_chans
