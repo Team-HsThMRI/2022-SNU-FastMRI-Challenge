@@ -8,11 +8,11 @@ def parse():
     parser = argparse.ArgumentParser(description='Train Unet on FastMRI challenge Images',
                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-g', '--GPU-NUM', type=int, default=0, help='GPU number to allocate')
-    parser.add_argument('-b', '--batch-size', type=int, default=4, help='Batch size')
+    parser.add_argument('-b', '--batch-size', type=int, default=1, help='Batch size')
     parser.add_argument('-e', '--num-epochs', type=int, default=20, help='Number of epochs')
     parser.add_argument('-l', '--lr', type=float, default=1e-3, help='Learning rate')
-    parser.add_argument('-r', '--report-interval', type=int, default=500, help='Report interval')
-    parser.add_argument('-n', '--net-name', type=Path, default='test_Unet', help='Name of network')
+    parser.add_argument('-r', '--report-interval', type=int, default=10, help='Report interval')
+    parser.add_argument('-n', '--net-name', type=Path, default='test_Mnet', help='Name of network')
     parser.add_argument('-t', '--data-path-train', type=Path, default='/root/input/train/image/', help='Directory of train data')
     parser.add_argument('-v', '--data-path-val', type=Path, default='/root/input/val/image/', help='Directory of validation data')
     

@@ -3,12 +3,14 @@ import numpy as np
 import torch
 import torch.nn as nn
 import time
+import copy
 
 from collections import defaultdict
 from utils.data.load_data import create_data_loaders
 from utils.common.utils import save_reconstructions, ssim_loss
 from utils.common.loss_function import SSIMLoss
-from utils.model.mnet import Mnet
+from utils.model.unet_modify import Unet
+
 
 def train_epoch(args, epoch, model, data_loader, optimizer, loss_type):
     model.train()
@@ -35,6 +37,7 @@ def train_epoch(args, epoch, model, data_loader, optimizer, loss_type):
                 f'Iter = [{iter:4d}/{len(data_loader):4d}] '
                 f'Loss = {loss.item():.4g} '
                 f'Time = {time.perf_counter() - start_iter:.4f}s',
+                f'Model parameters = {model.parameters()}',
             )
         start_iter = time.perf_counter()
     total_loss = total_loss / len_loader
@@ -76,7 +79,23 @@ def validate(args, model, data_loader):
     return metric_loss, num_subjects, reconstructions, targets, inputs, time.perf_counter() - start
 
 
-def save_model(args, exp_dir, epoch, model, optimizer, best_val_loss, is_new_best):
+def save_model(args, exp_dir, epoch, model, optimizer, val_loss):
+    torch.save(
+        {
+            'epoch': epoch,
+            'args': args,
+            'model': model.state_dict(),
+            'optimizer': optimizer.state_dict(),
+            'val_loss': val_loss,
+            'exp_dir': exp_dir
+        },
+        f=exp_dir / 'model.tar'
+    )
+    # if is_new_best:
+    #     shutil.copyfile(exp_dir / 'model.tar', exp_dir / 'best_model.tar')
+
+
+def save_best_model(args, exp_dir, epoch, model, optimizer, best_val_loss):
     torch.save(
         {
             'epoch': epoch,
@@ -86,38 +105,61 @@ def save_model(args, exp_dir, epoch, model, optimizer, best_val_loss, is_new_bes
             'best_val_loss': best_val_loss,
             'exp_dir': exp_dir
         },
-        f=exp_dir / 'model.tar'
+        f=exp_dir / 'best_model.tar'
     )
-    if is_new_best:
-        shutil.copyfile(exp_dir / 'model.tar', exp_dir / 'best_model.tar')
 
-def load_model(exp_dir):
-  checkpoint = torch.load(exp_dir / 'model.tar')
-  return checkpoint
-        
+
+def load_pretrained_weights(model, pretrained_copy):
+    model.state_dict()['first_block.layers.0.weight'] = pretrained_copy['down_sample_layers.0.layers.0.weight']
+    model.state_dict()['first_block.layers.3.weight'] = pretrained_copy['down_sample_layers.0.layers.4.weight']
+    model.state_dict()['down1.layers.2.layers.0.weight'] = pretrained_copy['down_sample_layers.1.layers.0.weight']
+    model.state_dict()['down1.layers.2.layers.3.weight'] = pretrained_copy['down_sample_layers.1.layers.4.weight']
+    model.state_dict()['down2.layers.2.layers.0.weight'] = pretrained_copy['down_sample_layers.2.layers.0.weight']
+    model.state_dict()['down2.layers.2.layers.3.weight'] = pretrained_copy['down_sample_layers.2.layers.4.weight']
+    model.state_dict()['down3.layers.2.layers.0.weight'] = pretrained_copy['down_sample_layers.3.layers.0.weight']
+    model.state_dict()['down3.layers.2.layers.3.weight'] = pretrained_copy['down_sample_layers.3.layers.4.weight']
+    model.state_dict()['down4.layers.2.layers.0.weight'] = pretrained_copy['conv.layers.0.weight']
+    model.state_dict()['down4.layers.2.layers.3.weight'] = pretrained_copy['conv.layers.4.weight']
+
+    model.state_dict()['up1.conv.layers.0.weight'] = pretrained_copy['up_conv.0.layers.0.weight']
+    model.state_dict()['up1.conv.layers.3.weight'] = pretrained_copy['up_conv.0.layers.4.weight']
+    model.state_dict()['up2.conv.layers.0.weight'] = pretrained_copy['up_conv.1.layers.0.weight']
+    model.state_dict()['up2.conv.layers.3.weight'] = pretrained_copy['up_conv.1.layers.4.weight']
+    model.state_dict()['up3.conv.layers.0.weight'] = pretrained_copy['up_conv.2.layers.0.weight']
+    model.state_dict()['up3.conv.layers.3.weight'] = pretrained_copy['up_conv.2.layers.4.weight']
+    model.state_dict()['up4.conv.layers.0.weight'] = pretrained_copy['up_conv.3.0.layers.0.weight']
+    model.state_dict()['up4.conv.layers.3.weight'] = pretrained_copy['up_conv.3.0.layers.4.weight']
+    model.state_dict()['last_block.weight'] = pretrained_copy['up_conv.3.1.weight']
+    model.state_dict()['last_block.bias'] = pretrained_copy['up_conv.3.1.bias']
+    return model
+
+
 def train(args):
     device = torch.device(f'cuda:{args.GPU_NUM}' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(device)
     print('Current cuda device: ', torch.cuda.current_device())
-    
-    model = Mnet(in_chans = args.in_chans, out_chans = args.out_chans)
+
+    pretrained = torch.load(
+        '/content/drive/Shareddrives/2022 FastMRI/pretrained_models/brain_leaderboard_state_dict_unet.pt')
+    pretrained_copy = copy.deepcopy(pretrained)
+
+    model = Unet(in_chans=args.in_chans, out_chans=args.out_chans)
     model.to(device=device)
+
+    model = load_pretrained_weights(model, pretrained_copy)
+
     loss_type = SSIMLoss().to(device=device)
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
 
-    train_loader = create_data_loaders(data_path = args.data_path_train, args = args)
-    val_loader = create_data_loaders(data_path = args.data_path_val, args = args)
+    best_val_loss = 1.
+    start_epoch = 0
 
-    ckp = load_model(args.exp_dir)
-    best_val_loss = ckp['best_val_loss']
-    print(best_val_loss)
-    start_epoch = ckp['epoch']
-    model.load_state_dict(ckp['model'])
-    optimizer.load_state_dict(ckp['optimizer'])
+    train_loader = create_data_loaders(data_path=args.data_path_train, args=args)
+    val_loader = create_data_loaders(data_path=args.data_path_val, args=args)
 
     for epoch in range(start_epoch, args.num_epochs):
         print(f'Epoch #{epoch:2d} ............... {args.net_name} ...............')
-        
+
         train_loss, train_time = train_epoch(args, epoch, model, train_loader, optimizer, loss_type)
         val_loss, num_subjects, reconstructions, targets, inputs, val_time = validate(args, model, val_loader)
 
@@ -126,7 +168,7 @@ def train(args):
         is_new_best = val_loss < best_val_loss
         best_val_loss = min(best_val_loss, val_loss)
 
-        save_model(args, args.exp_dir, epoch + 1, model, optimizer, best_val_loss, is_new_best)
+        save_model(args, args.exp_dir, epoch + 1, model, optimizer, val_loss)
         print(
             f'Epoch = [{epoch:4d}/{args.num_epochs:4d}] TrainLoss = {train_loss:.4g} '
             f'ValLoss = {val_loss:.4g} TrainTime = {train_time:.4f}s ValTime = {val_time:.4f}s',
@@ -139,3 +181,4 @@ def train(args):
             print(
                 f'ForwardTime = {time.perf_counter() - start:.4f}s',
             )
+            save_best_model(args, args.exp_dir, epoch + 1, model, optimizer, best_val_loss)

@@ -27,6 +27,10 @@ class Unet(nn.Module):
         self.up3 = Up(256, 128, 0)
         self.up4 = Up(128, 64, 0)
         self.last_block = nn.Conv2d(64, out_chans, kernel_size=1)
+        self.maxpool = nn.MaxPool2d(12)
+        self.fc1 = ULinear(4096, 4096, 0.5)
+        self.invConv = nn.ConvTranspose2d(1024, 1024, 16, 8)
+
 
     def norm(self, x):
         b, h, w = x.shape
@@ -55,7 +59,19 @@ class Unet(nn.Module):
         d3 = self.down2(d2)
         d4 = self.down3(d3)
         m0 = self.down4(d4)
-        u1 = self.up1(m0, d4)
+        # print(m0.shape)
+        m1 = self.maxpool(m0)
+        # print(m1.shape)
+        m2 = m1.view((-1, 4096))
+        # print(m2.shape)
+        m3 = self.fc1(m2)
+        # print(m3.shape)
+        m4 = m3.view(-1, 1024, 2, 2)
+        # print(m4.shape)
+        m5 = self.invConv(m4)
+        # print(m5.shape)
+
+        u1 = self.up1(m5, d4)
         u2 = self.up2(u1, d3)
         u3 = self.up3(u2, d2)
         u4 = self.up4(u3, d1)
@@ -67,6 +83,21 @@ class Unet(nn.Module):
 
         return output
 
+class ULinear(nn.Module):
+    def __init__(self, in_chans, out_chans, p = 0):
+        super().__init__()
+        self.in_chans = in_chans
+        self.out_chans = out_chans
+        self.layers = nn.Sequential(
+            nn.Linear(in_chans, out_chans, bias = True),
+            nn.BatchNorm1d(out_chans),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p)
+        )
+
+    def forward(self, x):
+        return self.layers(x)
+
 class ConvBlock_1step(nn.Module):
 
     def __init__(self, in_chans, out_chans):
@@ -75,7 +106,7 @@ class ConvBlock_1step(nn.Module):
         self.out_chans = out_chans
         self.layers = nn.Sequential(
             nn.Conv2d(in_chans, out_chans, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_chans),
+            nn.InstanceNorm2d(out_chans),
             nn.ReLU(inplace=True)
         )
 
@@ -91,10 +122,10 @@ class ConvBlock(nn.Module):
         self.out_chans = out_chans
         self.layers = nn.Sequential(
             nn.Conv2d(in_chans, out_chans, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_chans),
+            nn.InstanceNorm2d(out_chans),
             nn.ReLU(inplace=True),
             nn.Conv2d(out_chans, out_chans, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_chans),
+            nn.InstanceNorm2d(out_chans),
             nn.ReLU(inplace=True)
 
         )
