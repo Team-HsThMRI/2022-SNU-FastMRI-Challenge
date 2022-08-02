@@ -14,7 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from fastmri.data import transforms
 
-from unet import Unet
+from unet import modifiedUnet
 
 
 class NormUnet(nn.Module):
@@ -44,7 +44,7 @@ class NormUnet(nn.Module):
         """
         super().__init__()
 
-        self.unet = Unet(
+        self.unet = modifiedUnet(
             in_chans=in_chans,
             out_chans=out_chans,
             chans=chans,
