@@ -91,7 +91,7 @@ class ULinear(nn.Module):
         self.layers = nn.Sequential(
             nn.Linear(in_chans, out_chans, bias = True),
             nn.BatchNorm1d(out_chans),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(negative_slope = 0.2, inplace=True),
             nn.Dropout(p)
         )
 
@@ -107,7 +107,7 @@ class ConvBlock_1step(nn.Module):
         self.layers = nn.Sequential(
             nn.Conv2d(in_chans, out_chans, kernel_size=3, padding=1),
             nn.InstanceNorm2d(out_chans),
-            nn.ReLU(inplace=True)
+            nn.LeakyReLU(negative_slope = 0.2, inplace=True)
         )
 
     def forward(self, x):
@@ -123,10 +123,10 @@ class ConvBlock(nn.Module):
         self.layers = nn.Sequential(
             nn.Conv2d(in_chans, out_chans, kernel_size=3, padding=1),
             nn.InstanceNorm2d(out_chans),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(negative_slope = 0.2, inplace=True),
             nn.Conv2d(out_chans, out_chans, kernel_size=3, padding=1),
             nn.InstanceNorm2d(out_chans),
-            nn.ReLU(inplace=True)
+            nn.LeakyReLU(negative_slope = 0.2, inplace=True)
 
         )
 
