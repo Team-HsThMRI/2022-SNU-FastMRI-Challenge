@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="root@147.46.92.36:30468" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="root@147.46.92.91:30669" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
-      <paths name="root@147.46.92.36:30468">
+      <paths name="root@147.46.92.91:30669">
         <serverdata>
           <mappings>
             <mapping deploy="/root/fastMRI" local="$PROJECT_DIR$" />
