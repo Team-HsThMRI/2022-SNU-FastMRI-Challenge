@@ -21,7 +21,7 @@ def parse():
     parser.add_argument('-t', '--data-path-train', type=Path, default='/root/input/train', help='Directory of train data')
     parser.add_argument('-v', '--data-path-val', type=Path, default='/root/input/val/', help='Directory of validation data')
     
-    parser.add_argument('--cascade', type=int, default=2, help='Number of cascades | Should be less than 12') ## important hyperparameter
+    parser.add_argument('--cascade', type=int, default=1, help='Number of cascades | Should be less than 12') ## important hyperparameter
     parser.add_argument('--input-key', type=str, default='kspace', help='Name of input key')
     parser.add_argument('--target-key', type=str, default='image_label', help='Name of target key')
     parser.add_argument('--max-key', type=str, default='max', help='Name of max key in attributes')

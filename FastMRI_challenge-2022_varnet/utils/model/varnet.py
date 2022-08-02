@@ -1,6 +1,5 @@
 """
 Copyright (c) Facebook, Inc. and its affiliates.
-
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
@@ -20,7 +19,6 @@ from unet import modifiedUnet
 class NormUnet(nn.Module):
     """
     Normalized U-Net model.
-
     This is the same as a regular U-Net, but with normalization applied to the
     input before the U-Net. This keeps the values more numerically stable
     during training.
@@ -28,8 +26,8 @@ class NormUnet(nn.Module):
 
     def __init__(
         self,
-        chans: int,
-        num_pools: int,
+        chans: int,  # 18
+        num_pools: int,  # 4
         in_chans: int = 2,
         out_chans: int = 2,
         drop_prob: float = 0.0,
@@ -45,10 +43,10 @@ class NormUnet(nn.Module):
         super().__init__()
 
         self.unet = modifiedUnet(
-            in_chans=in_chans,
-            out_chans=out_chans,
-            chans=chans,
-            num_pool_layers=num_pools,
+            in_chans=in_chans,  # 2
+            out_chans=out_chans,  # 2
+            chans=chans,  # 18
+            num_pool_layers=num_pools,  # 4
             drop_prob=drop_prob,
         )
 
@@ -128,7 +126,6 @@ class NormUnet(nn.Module):
 class SensitivityModel(nn.Module):
     """
     Model for learning sensitivity estimation from k-space data.
-
     This model applies an IFFT to multichannel k-space data and then a U-Net
     to the coil images to estimate coil sensitivities. It can be used with the
     end-to-end variational network.
@@ -136,8 +133,8 @@ class SensitivityModel(nn.Module):
 
     def __init__(
         self,
-        chans: int,
-        num_pools: int,
+        chans: int,  # 8
+        num_pools: int,  # 4
         in_chans: int = 2,
         out_chans: int = 2,
         drop_prob: float = 0.0,
@@ -203,7 +200,6 @@ class SensitivityModel(nn.Module):
 class VarNet(nn.Module):
     """
     A full variational network model.
-
     This model applies a combination of soft data consistency with a U-Net
     regularizer. To use non-U-Net regularizers, use VarNetBlock.
     """
@@ -211,10 +207,10 @@ class VarNet(nn.Module):
     def __init__(
         self,
         num_cascades: int = 12,
-        sens_chans: int = 8,
-        sens_pools: int = 4,
-        chans: int = 18,
-        pools: int = 4,
+        sens_chans: int = 8,  # 8
+        sens_pools: int = 4,  # 4
+        chans: int = 18,  # 64?
+        pools: int = 4,  # 5?
     ):
         """
         Args:
@@ -245,11 +241,28 @@ class VarNet(nn.Module):
         width = result.shape[-1]
         return result[..., (height - 384) // 2 : 384 + (height - 384) // 2, (width - 384) // 2 : 384 + (width - 384) // 2]
 
+    # def on_load_checkpoint(self, checkpoint: dict) -> None:
+    #     state_dict = checkpoint
+    #     model_state_dict = self.state_dict()
+    #     is_changed = False
+    #     for k in state_dict:
+    #         if k in model_state_dict:
+    #             if state_dict[k].shape != model_state_dict[k].shape:
+    #                 nn.Module.logging.info(f"Skip loading parameter: {k}, "
+    #                              f"required shape: {model_state_dict[k].shape}, "
+    #                              f"loaded shape: {state_dict[k].shape}")
+    #                 state_dict[k] = model_state_dict[k]
+    #                 is_changed = True
+    #             else:
+    #                 nn.Module.logging.info(f"Dropping parameter {k}")
+    #                 is_changed = True
+    #
+    #     if is_changed:
+    #         checkpoint.pop("optimizer_states", None)
 
 class VarNetBlock(nn.Module):
     """
     Model block for end-to-end variational network.
-
     This model applies a combination of soft data consistency with the input
     model as a regularizer. A series of these blocks can be stacked to form
     the full variational network.

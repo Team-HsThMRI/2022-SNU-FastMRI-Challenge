@@ -113,7 +113,8 @@ def download_model(url, fname):
 
         
 def train(args):
-    device = torch.device(f'cuda:{args.GPU_NUM}' if torch.cuda.is_available() else 'cpu')
+    #device = torch.device(f'cuda:{args.GPU_NUM}' if torch.cuda.is_available() else 'cpu')
+    device = torch.device(f'cuda:{args.GPU_NUM}')
     torch.cuda.set_device(device)
     print('Current cuda device: ', torch.cuda.current_device())
 
@@ -132,7 +133,18 @@ def train(args):
     for layer in pretrained_copy.keys():
         if layer.split('.',2)[1].isdigit() and (args.cascade <= int(layer.split('.',2)[1]) <=11):
             del pretrained[layer]
-    model.load_state_dict(pretrained)
+    model.load_state_dict(pretrained, strict = False)
+    # model.on_load_checkpoint(pretrained)
+
+    for name, param in model.named_parameters():
+        print(name)
+
+    # for params in model.parameters():
+    #     params.requires_grad = False
+    #
+    # for name, param in model.named_parameters():
+    #     if 'sens_net' in name:
+    #         param.requires_grad = True
 
 
     loss_type = SSIMLoss().to(device=device)
@@ -174,3 +186,5 @@ def train(args):
             print(
                 f'ForwardTime = {time.perf_counter() - start:.4f}s',
             )
+
+
