@@ -9,7 +9,7 @@ from pathlib import Path
 import copy
 
 from collections import defaultdict
-from utils.data.load_data import create_data_loaders
+from utils.data.load_data_train import create_data_loaders
 from utils.common.utils import save_reconstructions, ssim_loss
 from utils.common.loss_function import SSIMLoss
 from utils.model.varnet import VarNet
@@ -139,12 +139,13 @@ def train(args):
     for name, param in model.named_parameters():
         print(name)
 
-    # for params in model.parameters():
-    #     params.requires_grad = False
-    #
-    # for name, param in model.named_parameters():
-    #     if 'sens_net' in name:
-    #         param.requires_grad = True
+    for params in model.parameters():
+        params.requires_grad = False
+
+    for name, param in model.named_parameters():
+        if 'cascades' in name or 'fc1' in name or 'invConv' in name:
+            param.requires_grad = True
+
 
 
     loss_type = SSIMLoss().to(device=device)
