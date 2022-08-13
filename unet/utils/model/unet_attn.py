@@ -46,7 +46,13 @@ class CenterBlock(nn.Module):
             nn.MaxPool2d(12),
         )
         self.fc1 = nn.Sequential(
-            nn.Linear(4096, 4096, bias=True),
+            nn.Linear(4096, 2048, bias=True),
+            # nn.BatchNorm1d(4096),
+            nn.LeakyReLU(negative_slope=0.2, inplace=True),
+            nn.Dropout(0.5),
+        )
+        self.fc2 = nn.Sequential(
+            nn.Linear(2048, 4096, bias=True),
             # nn.BatchNorm1d(4096),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
             nn.Dropout(0.5),
@@ -66,6 +72,7 @@ class CenterBlock(nn.Module):
         x = self.maxpool(x)
         x = x.view((-1, 4096))
         x = self.fc1(x)
+        x = self.fc2(x)
         x = x.view(-1, 1024, 2, 2)
         x = self.invconv(x)
         x = self.centerblock2(x)
