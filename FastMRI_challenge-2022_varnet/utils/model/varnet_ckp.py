@@ -13,7 +13,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from fastmri.data import transforms
 
-from unet import modifiedUnet
+from unet_ckp import modifiedUnet
 
 
 class NormUnet(nn.Module):
@@ -26,6 +26,8 @@ class NormUnet(nn.Module):
 
     def __init__(
         self,
+        states,
+        description,
         chans: int,  # 18
         num_pools: int,  # 4
         in_chans: int = 2,
@@ -43,6 +45,8 @@ class NormUnet(nn.Module):
         super().__init__()
 
         self.unet = modifiedUnet(
+            states,
+            description,
             in_chans=in_chans,  # 2
             out_chans=out_chans,  # 2
             chans=chans,  # 18
@@ -86,7 +90,7 @@ class NormUnet(nn.Module):
         h_mult = ((h - 1) | 15) + 1
         w_pad = [math.floor((w_mult - w) / 2), math.ceil((w_mult - w) / 2)]
         h_pad = [math.floor((h_mult - h) / 2), math.ceil((h_mult - h) / 2)]
-        # TODO: fix this type when PyTorch fixes theirs
+
         # the documentation lies - this actually takes a list
         # https://github.com/pytorch/pytorch/blob/master/torch/nn/functional.py#L3457
         # https://github.com/pytorch/pytorch/pull/16949
@@ -133,6 +137,7 @@ class SensitivityModel(nn.Module):
 
     def __init__(
         self,
+        states,
         chans: int,  # 8
         num_pools: int,  # 4
         in_chans: int = 2,
@@ -150,6 +155,8 @@ class SensitivityModel(nn.Module):
         super().__init__()
 
         self.norm_unet = NormUnet(
+            states,
+            'sens_net',
             chans,
             num_pools,
             in_chans=in_chans,
@@ -206,11 +213,13 @@ class VarNet(nn.Module):
 
     def __init__(
         self,
+        states,
         num_cascades: int = 12,
         sens_chans: int = 8,  # 8
         sens_pools: int = 4,  # 4
         chans: int = 18,  # 64?
         pools: int = 4,  # 5?
+
     ):
         """
         Args:
@@ -225,9 +234,9 @@ class VarNet(nn.Module):
         """
         super().__init__()
 
-        self.sens_net = SensitivityModel(sens_chans, sens_pools)
+        self.sens_net = SensitivityModel(states, sens_chans, sens_pools)
         self.cascades = nn.ModuleList(
-            [VarNetBlock(NormUnet(chans, pools)) for _ in range(num_cascades)]
+            [VarNetBlock(NormUnet(states, str(i), chans, pools)) for i in range(num_cascades)]
         )
 
     def forward(self, masked_kspace: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
@@ -283,7 +292,6 @@ class VarNetBlock(nn.Module):
         return fastmri.fft2c(fastmri.complex_mul(x, sens_maps))
 
     def sens_reduce(self, x: torch.Tensor, sens_maps: torch.Tensor) -> torch.Tensor:
-
         x = fastmri.ifft2c(x)
         return fastmri.complex_mul(x, fastmri.complex_conj(sens_maps)).sum(
             dim=1, keepdim=True
