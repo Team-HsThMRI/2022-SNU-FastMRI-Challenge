@@ -1,6 +1,6 @@
 # 2022 SNU FastMRI Challenge
 
-### 0. Baseline Codes
+### 0. Baseline Codes / References
 - LISTatSNU (2022) FastMRI_challenge [[Source Code](https://github.com/LISTatSNU/FastMRI_challenge)]
 - facebookresearch (2022) fastMRI [[Source Code](https://github.com/facebookresearch/fastMRI)]
 - XiaowenK (2020) UNet_Family [[Source Code](https://github.com/XiaowenK/UNet_Family)]
