@@ -36,4 +36,5 @@
 
 ### 4. Extra Information
 - 실행 시 Code, utils, model, readme.txt 외의 폴더 및 파일들은 실행에 영향을 주지 않습니다.
+- 문제를 해결한 방식에 대한 소개는 `Ideas in Models.pdf` 파일 내에 설명되어 있습니다.
 
